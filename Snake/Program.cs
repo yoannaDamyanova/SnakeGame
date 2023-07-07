@@ -68,8 +68,12 @@ void FillFieldWithValues(char[,] array, Fruit apple)
     }
 
 }
-void PlaceSnakeOnField(List<Cell> snake, char[,] field, int xHead, int yHead)
+void PlaceSnakeOnField(List<Cell> snake, char[,] field, bool crash)
 {
+    if (crash)
+    {
+        move = false;
+    }
     foreach (var item in snake)
     {
         int currX = item.X;
@@ -81,11 +85,6 @@ void PlaceSnakeOnField(List<Cell> snake, char[,] field, int xHead, int yHead)
             && currY < field.GetLength(1))
         {
             field[currX, currY] = 's';
-        }
-        // check for game over
-        if (yHead == yHead + 1 || yHead == yHead - 1)
-        {
-            move = false; break;
         }
     }
     foreach (var item in snake)
@@ -152,19 +151,45 @@ bool CheckIfSnakeEatsApple(char[,] field, int x, int y)
     }
     return false;
 }
+bool CheckIfSnakeRunsIntoItself(char[,] field, int x, int y)
+{
+    if (x >= 0
+        && x < field.GetLength(0)
+        && y >= 0
+        && y < field.GetLength(1))
+    {
+        if (field[x, y] == 's')
+        {
+            return true;
+
+        }
+    }
+    return false;
+}
 void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field)
 {
+    // check for crash
+
+    bool crash = false;
+
+    PlaceSnakeOnField(snake, field, crash);
+
     // get head
     Cell lastCell = snake.Last();
 
     // get tail
     Cell firstCell = snake.First();
 
+    // check for apple
     bool appleIsEaten = false;
     // depending on direction, move head
     switch (direction)
     {
         case Directions.up:
+            if (CheckIfSnakeRunsIntoItself(field, lastCell.X - 1, lastCell.Y))
+            {
+                crash = true;
+            }
             // check if snake eats apple
             if (CheckIfSnakeEatsApple(field, lastCell.X - 1, lastCell.Y))
             {
@@ -172,21 +197,28 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
                 appleIsEaten = true;
             }
             snake.Add(new Cell(lastCell.X - 1, lastCell.Y));
-            PlaceSnakeOnField(snake, field, lastCell.X - 1, lastCell.Y);
+            PlaceSnakeOnField(snake, field, crash);
             break;
 
         case Directions.down:
-            // check if snake eats apple
+            if (CheckIfSnakeRunsIntoItself(field, lastCell.X + 1, lastCell.Y))
+            {
+                crash = true;
+            }
             if (CheckIfSnakeEatsApple(field, lastCell.X + 1, lastCell.Y))
             {
                 // add additional head
                 appleIsEaten = true;
             }
             snake.Add(new Cell(lastCell.X + 1, lastCell.Y));
-            PlaceSnakeOnField(snake, field, lastCell.X + 1, lastCell.Y);
+            PlaceSnakeOnField(snake, field, crash);
             break;
 
         case Directions.left:
+            if (CheckIfSnakeRunsIntoItself(field, lastCell.X, lastCell.Y - 1))
+            {
+                crash = true;
+            }
             // check if snake eats apple
             if (CheckIfSnakeEatsApple(field, lastCell.X, lastCell.Y - 1))
             {
@@ -194,10 +226,14 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
                 appleIsEaten = true;
             }
             snake.Add(new Cell(lastCell.X, lastCell.Y - 1));
-            PlaceSnakeOnField(snake, field, lastCell.X, lastCell.Y - 1);
+            PlaceSnakeOnField(snake, field, crash);
             break;
 
         case Directions.right:
+            if (CheckIfSnakeRunsIntoItself(field, lastCell.X, lastCell.Y + 1))
+            {
+                crash = true;
+            }
             // check if snake eats apple
             if (CheckIfSnakeEatsApple(field, lastCell.X, lastCell.Y + 1))
             {
@@ -205,7 +241,7 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
                 appleIsEaten = true;
             }
             snake.Add(new Cell(lastCell.X, lastCell.Y + 1));
-            PlaceSnakeOnField(snake, field, lastCell.X, lastCell.Y + 1);
+            PlaceSnakeOnField(snake, field, crash);
             break;
 
     }
@@ -218,70 +254,3 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
 
 }
 
-//bool CheckIfSnakeRunIntoItself(Directions directon, List<Cell> snake, char[,] field)
-//{
-//    var last = snake.Last();
-//    int xToCheck = last.X;
-//    int yToCheck = last.Y;
-//    bool crash = false;
-//    switch (direction)
-//    {
-//        case Directions.left:
-//            if (field[xToCheck, yToCheck - 1] == 's')
-//            {
-//                crash = true; break;
-//            }
-//            break;
-//        case Directions.right:
-//            if (field[xToCheck, yToCheck + 1] == 's')
-//            {
-//                crash = true; break;
-//            }
-//            break;
-//        default:
-//            break;
-//    }
-
-//}
-
-
-
-
-//var lastCell = snake.SnakeBody.Last();
-//if (enteredDirection.Key == ConsoleKey.W)
-//{
-//    snake.SnakeBody.Add(new Cell(lastCell.X - 1, lastCell.Y));
-//    enteredDirection = Console.ReadKey();
-//    if (enteredDirection.Key != ConsoleKey.W)
-//    {
-//        break;
-//    }
-//}
-//if (enteredDirection.Key == ConsoleKey.S)
-//{
-//    snake.SnakeBody.Add(new Cell(lastCell.X + 1, lastCell.Y));
-//    enteredDirection = Console.ReadKey();
-//    if (enteredDirection.Key != ConsoleKey.S)
-//    {
-//        break;
-//    }
-//}
-//if (enteredDirection.Key == ConsoleKey.A)
-//{
-//    snake.SnakeBody.Add(new Cell(lastCell.X, lastCell.Y - 1));
-//    enteredDirection = Console.ReadKey();
-//    if (enteredDirection.Key != ConsoleKey.A)
-//    {
-//        break;
-
-//    }
-//}
-//if (enteredDirection.Key == ConsoleKey.D)
-//{
-//    snake.SnakeBody.Add(new Cell(lastCell.X, lastCell.Y + 1));
-//    enteredDirection = Console.ReadKey();
-//    if (enteredDirection.Key != ConsoleKey.D)
-//    {
-//        break;
-//    }
-//}
