@@ -139,13 +139,16 @@ void SetDirection(ConsoleKeyInfo enteredDirection)
 }
 bool CheckIfSnakeEatsApple(char[,] field, int x, int y)
 {
-    if (field[x, y] == 'a'
-        && x >= 0
+    if (x >= 0
         && x < field.GetLength(0)
         && y >= 0
         && y < field.GetLength(1))
     {
-        return true;
+        if (field[x, y] == 'a')
+        {
+            return true;
+
+        }
     }
     return false;
 }
