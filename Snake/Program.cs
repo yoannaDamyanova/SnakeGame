@@ -11,6 +11,7 @@ SnakeObject snake = new SnakeObject();
 FieldCLass field = new FieldCLass(dimention);
 
 Fruit apple = new Fruit();
+
 apple.Apple.Character = 'a';
 
 Console.WriteLine("Press 'Enter' to start game: ");
@@ -21,7 +22,8 @@ ConsoleKeyInfo start = Console.ReadKey();
 if (start.Key == ConsoleKey.Enter)
 {
     Console.WriteLine("Choose direction");
-    FillFieldWithValues(field.Field);
+
+    FillFieldWithValues(field.Field, apple);
 
     ConsoleKeyInfo enteredDirection;
 
@@ -48,13 +50,20 @@ if (start.Key == ConsoleKey.Enter)
 }
 
 
-void FillFieldWithValues(char[,] array)
+void FillFieldWithValues(char[,] array, Fruit apple)
 {
+    int appleX = apple.Apple.X;
+    int appleY = apple.Apple.Y;
     for (int i = 0; i < array.GetLength(0); i++)
     {
         for (int j = 0; j < array.GetLength(1); j++)
         {
-            array[i, j] = '0';
+            if (appleX == i && appleY == j)
+            {
+                array[i, j] = 'a';
+            }
+            else
+                array[i, j] = '0';
         }
     }
 
@@ -72,9 +81,9 @@ void PlaceSnakeOnField(List<Cell> snake, char[,] field, int xHead, int yHead)
             && currY < field.GetLength(1))
         {
             field[currX, currY] = 's';
-        }       
+        }
         // check for game over
-        if (yHead==yHead+1 || yHead==yHead-1) 
+        if (yHead == yHead + 1 || yHead == yHead - 1)
         {
             move = false; break;
         }
@@ -128,42 +137,82 @@ void SetDirection(ConsoleKeyInfo enteredDirection)
             break;
     }
 }
+bool CheckIfSnakeEatsApple(char[,] field, int x, int y)
+{
+    if (field[x, y] == 'a'
+        && x >= 0
+        && x < field.GetLength(0)
+        && y >= 0
+        && y < field.GetLength(1))
+    {
+        return true;
+    }
+    return false;
+}
 void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field)
 {
     // get head
     Cell lastCell = snake.Last();
+
+    // get tail
+    Cell firstCell = snake.First();
+
+    bool appleIsEaten = false;
     // depending on direction, move head
     switch (direction)
     {
         case Directions.up:
+            // check if snake eats apple
+            if (CheckIfSnakeEatsApple(field, lastCell.X - 1, lastCell.Y))
+            {
+                // add additional head
+                appleIsEaten = true;
+            }
             snake.Add(new Cell(lastCell.X - 1, lastCell.Y));
-
             PlaceSnakeOnField(snake, field, lastCell.X - 1, lastCell.Y);
             break;
+
         case Directions.down:
+            // check if snake eats apple
+            if (CheckIfSnakeEatsApple(field, lastCell.X + 1, lastCell.Y))
+            {
+                // add additional head
+                appleIsEaten = true;
+            }
             snake.Add(new Cell(lastCell.X + 1, lastCell.Y));
             PlaceSnakeOnField(snake, field, lastCell.X + 1, lastCell.Y);
-
             break;
+
         case Directions.left:
+            // check if snake eats apple
+            if (CheckIfSnakeEatsApple(field, lastCell.X, lastCell.Y - 1))
+            {
+                // add additional head
+                appleIsEaten = true;
+            }
             snake.Add(new Cell(lastCell.X, lastCell.Y - 1));
             PlaceSnakeOnField(snake, field, lastCell.X, lastCell.Y - 1);
-
             break;
+
         case Directions.right:
+            // check if snake eats apple
+            if (CheckIfSnakeEatsApple(field, lastCell.X, lastCell.Y + 1))
+            {
+                // add additional head
+                appleIsEaten = true;
+            }
             snake.Add(new Cell(lastCell.X, lastCell.Y + 1));
             PlaceSnakeOnField(snake, field, lastCell.X, lastCell.Y + 1);
-
             break;
+
+    }
+    if (!appleIsEaten)
+    {
+        // remove tail from field
+        field[firstCell.X, firstCell.Y] = '0';
+        snake.RemoveAt(0);
     }
 
-    // get tail
-    Cell firstCell = snake.First();
-    int xToRemove = firstCell.X;
-    int yToRemove = firstCell.Y;
-    // remove tail from field
-    field[xToRemove, yToRemove] = '0';
-    snake.RemoveAt(0);
 }
 
 //bool CheckIfSnakeRunIntoItself(Directions directon, List<Cell> snake, char[,] field)
