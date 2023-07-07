@@ -21,31 +21,32 @@ ConsoleKeyInfo start = Console.ReadKey();
 if (start.Key == ConsoleKey.Enter)
 {
     Console.WriteLine("Choose direction");
+    FillFieldWithValues(field.Field);
+
+    ConsoleKeyInfo enteredDirection;
+
+    do
+    {
+        // get key pressed by user
+        enteredDirection = Console.ReadKey();
+        // pause for 1 second
+        Thread.Sleep(1000);
+        Console.Clear();
+
+        SetDirection(enteredDirection);
+
+        PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
+
+        PrintFieldWithSnake(field.Field);
+
+
+    } while (move);
+    if (!move)
+    {
+        Console.WriteLine("Game over!");
+    }
 }
-FillFieldWithValues(field.Field);
 
-ConsoleKeyInfo enteredDirection;
-
-do
-{
-    // get key pressed by user
-    enteredDirection = Console.ReadKey();
-    // pause for 1 second
-    Thread.Sleep(1000);
-    Console.Clear();
-
-    SetDirection(enteredDirection);
-
-    PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
-
-    PrintFieldWithSnake(field.Field);
-
-
-} while (move);
-if (!move)
-{
-    Console.WriteLine("Game over!");
-}
 
 void FillFieldWithValues(char[,] array)
 {
