@@ -22,13 +22,11 @@ ConsoleKeyInfo start = Console.ReadKey();
 if (start.Key == ConsoleKey.Enter)
 {
     Console.WriteLine("Choose direction");
-
-    FillFieldWithValues(field.Field, apple);
-
     ConsoleKeyInfo enteredDirection;
 
     do
     {
+        FillFieldWithValues(field.Field, apple);
 
         // get key pressed by user
         enteredDirection = Console.ReadKey();
@@ -36,7 +34,6 @@ if (start.Key == ConsoleKey.Enter)
         if (!AreDirectionsOpposite(dir, direction))
         {
             direction = dir;
-
         }
         // pause for 1 second
         Thread.Sleep(1000);
@@ -71,18 +68,15 @@ void FillFieldWithValues(char[,] array, Fruit apple)
 {
     int appleX = apple.Apple.X;
     int appleY = apple.Apple.Y;
+
     for (int i = 0; i < array.GetLength(0); i++)
     {
         for (int j = 0; j < array.GetLength(1); j++)
         {
-            if (appleX == i && appleY == j)
-            {
-                array[i, j] = 'a';
-            }
-            else
-                array[i, j] = '0';
+            array[i, j] = '0';
         }
     }
+    array[appleX, appleY] = 'a';
 
 }
 void PlaceSnakeOnField(List<Cell> snake, char[,] field, bool crash)
@@ -155,10 +149,24 @@ bool CheckIfSnakeEatsApple(char[,] field, int x, int y)
         && y >= 0
         && y < field.GetLength(1))
     {
-        if (field[x, y] == 'a')
+        // if head eats apple
+        if (x == apple.Apple.X && y == apple.Apple.Y)
         {
             return true;
-
+        }
+    }
+    return false;
+}
+bool CheckIfRandomizedAppleMatchesSnake(char[,] field, int x, int y)
+{
+    if (x >= 0
+    && x < field.GetLength(0)
+    && y >= 0
+    && y < field.GetLength(1))
+    {
+        if (field[x, y] == 's')
+        {
+            return true;
         }
     }
     return false;
@@ -173,7 +181,6 @@ bool CheckIfSnakeRunsIntoItself(char[,] field, int x, int y)
         if (field[x, y] == 's')
         {
             return true;
-
         }
     }
     return false;
@@ -267,6 +274,14 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
         // remove tail from field
         field[firstCell.X, firstCell.Y] = '0';
         snake.RemoveAt(0);
+    }
+    else if (appleIsEaten)
+    {
+        while (CheckIfRandomizedAppleMatchesSnake(field, apple.Apple.X, apple.Apple.Y))
+        {
+            apple.Apple.X = new Random().Next(dimension);
+            apple.Apple.X = new Random().Next(dimension);
+        }
     }
 
 }

@@ -1,24 +1,35 @@
-﻿string dir = "down";
-string enter=Console.ReadLine();
-if (AreDirectionsOpposite(dir, enter))
+﻿using System;
+
+public class CoordinateGenerator
 {
-    if (dir == "up" && enter == "down")
+    private Random random;
+
+    public CoordinateGenerator()
     {
-        dir = dir;
+        random = new Random();
+    }
+
+    public (int x, int y) GenerateCoordinates(int min, int max)
+    {
+        int x = random.Next(min, max + 1);
+        int y = random.Next(min, max + 1);
+        return (x, y);
     }
 }
-Console.WriteLine(dir);
 
-static bool AreDirectionsOpposite(string direction1, string direction2)
+public class Program
 {
-    if (direction1 == "up" && direction2 == "down")
-        return true;
-    else if (direction1 == "down" && direction2 == "up")
-        return true;
-    else if (direction1 == "left" && direction2 == "right")
-        return true;
-    else if (direction1 == "right" && direction2 == "left")
-        return true;
-    else
-        return false;
+    public static void Main(string[] args)
+    {
+        CoordinateGenerator generator = new CoordinateGenerator();
+
+        int min = 0;
+        int max = 10;
+
+        (int x1, int y1) = generator.GenerateCoordinates(min, max);
+        (int x2, int y2) = generator.GenerateCoordinates(min, max);
+
+        Console.WriteLine($"Coordinate 1: ({x1}, {y1})");
+        Console.WriteLine($"Coordinate 2: ({x2}, {y2})");
+    }
 }

@@ -9,7 +9,7 @@ namespace Snake
     public class Fruit
     {
         public Cell Apple { get; set; }
-        public char Character;
+        public char Character;        
 
         public Fruit() 
         {
