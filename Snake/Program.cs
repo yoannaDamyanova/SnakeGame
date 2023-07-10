@@ -21,6 +21,19 @@ ConsoleKeyInfo start = Console.ReadKey();
 
 if (start.Key == ConsoleKey.Enter)
 {
+    FillFieldWithValues(field.Field, apple);
+    foreach (var item in snake.SnakeBody)
+    {
+        field.Field[item.X, item.Y] = 's';
+    }
+    for (int i = 0; i <= field.Field.GetLength(0) - 1; i++)
+    {
+        for (int j = 0; j <= field.Field.GetLength(1) - 1; j++)
+        {
+            Console.Write(field.Field[i, j]);
+        }
+        Console.WriteLine();
+    }
     Console.WriteLine("Choose direction");
     ConsoleKeyInfo enteredDirection;
 
@@ -41,7 +54,7 @@ if (start.Key == ConsoleKey.Enter)
 
         PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
 
-        PrintFieldWithSnake(field.Field);
+        //PrintFieldWithSnake(field.Field);
 
 
     } while (move);
@@ -283,6 +296,6 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
             apple.Apple.X = new Random().Next(dimension);
         }
     }
-
+    PrintFieldWithSnake(field);
 }
 
