@@ -1,66 +1,24 @@
-﻿bool keyHold = false;
-ConsoleKeyInfo key = Console.ReadKey();
-
-while (true)
+﻿string dir = "down";
+string enter=Console.ReadLine();
+if (AreDirectionsOpposite(dir, enter))
 {
-    if (key.Key==ConsoleKey.W)
+    if (dir == "up" && enter == "down")
     {
-        //while (key.Key == ConsoleKey.W)
-        //{
-
-            Console.WriteLine("up");
-            key = Console.ReadKey();
-            if (key.Key != ConsoleKey.W)
-            {
-
-                continue;
-            }
-        //}
+        dir = dir;
     }
-
-    if (key.Key == ConsoleKey.S)
-    {
-        //while (key.Key == ConsoleKey.S)
-        //{
-            Console.WriteLine("down");
-            key = Console.ReadKey();
-            if (key.Key != ConsoleKey.S)
-            {
-
-                continue;
-            }
-        //}
-    }
-
-    if (key.Key == ConsoleKey.D)
-    {
-        //while (key.Key == ConsoleKey.D)
-        //{
-            Console.WriteLine("right");
-            key = Console.ReadKey();
-            if (key.Key != ConsoleKey.D)
-            {
-
-                continue;
-            }
-        //}
-    }
-
-    if (key.Key == ConsoleKey.A)
-    {
-        while (key.Key == ConsoleKey.A)
-        {
-            Console.WriteLine("left");
-            key = Console.ReadKey();
-            if (key.Key != ConsoleKey.A)
-            {
-                key = Console.ReadKey();
-
-                break;
-            }
-        }
-    }
- 
-    //key = Console.ReadKey();
 }
+Console.WriteLine(dir);
 
+static bool AreDirectionsOpposite(string direction1, string direction2)
+{
+    if (direction1 == "up" && direction2 == "down")
+        return true;
+    else if (direction1 == "down" && direction2 == "up")
+        return true;
+    else if (direction1 == "left" && direction2 == "right")
+        return true;
+    else if (direction1 == "right" && direction2 == "left")
+        return true;
+    else
+        return false;
+}

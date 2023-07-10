@@ -2,13 +2,13 @@
 
 bool move = true;
 
-int dimention = 10;
+int dimension = 10;
 
-Directions direction = Directions.down;
+Directions direction = Directions.up;
 
 SnakeObject snake = new SnakeObject();
 
-FieldCLass field = new FieldCLass(dimention);
+FieldCLass field = new FieldCLass(dimension);
 
 Fruit apple = new Fruit();
 
@@ -29,13 +29,18 @@ if (start.Key == ConsoleKey.Enter)
 
     do
     {
+
         // get key pressed by user
         enteredDirection = Console.ReadKey();
+        Directions dir = SetDirection(enteredDirection);
+        if (!AreDirectionsOpposite(dir, direction))
+        {
+            direction = dir;
+
+        }
         // pause for 1 second
         Thread.Sleep(1000);
         Console.Clear();
-
-        SetDirection(enteredDirection);
 
         PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
 
@@ -48,7 +53,19 @@ if (start.Key == ConsoleKey.Enter)
         Console.WriteLine("Game over!");
     }
 }
-
+bool AreDirectionsOpposite(Directions direction1, Directions direction2)
+{
+    if (direction1 == Directions.up && direction2 == Directions.down)
+        return true;
+    else if (direction1 == Directions.down && direction2 == Directions.up)
+        return true;
+    else if (direction1 == Directions.left && direction2 == Directions.right)
+        return true;
+    else if (direction1 == Directions.right && direction2 == Directions.left)
+        return true;
+    else
+        return false;
+}
 
 void FillFieldWithValues(char[,] array, Fruit apple)
 {
@@ -116,24 +133,19 @@ void PrintFieldWithSnake(char[,] field)
         Console.WriteLine();
     }
 }
-void SetDirection(ConsoleKeyInfo enteredDirection)
+Directions SetDirection(ConsoleKeyInfo enteredDirection)
 {
     switch (enteredDirection.Key)
     {
         case ConsoleKey.W:
-            direction = Directions.up;
-            break;
+            return Directions.up;
         case ConsoleKey.S:
-            direction = Directions.down;
-            break;
+            return Directions.down;
         case ConsoleKey.D:
-            direction = Directions.right;
-            break;
+            return Directions.right;
         case ConsoleKey.A:
-            direction = Directions.left;
-            break;
-        default:
-            break;
+            return Directions.left;
+        default: return Directions.down;
     }
 }
 bool CheckIfSnakeEatsApple(char[,] field, int x, int y)
@@ -186,18 +198,23 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
     switch (direction)
     {
         case Directions.up:
+
             if (CheckIfSnakeRunsIntoItself(field, lastCell.X - 1, lastCell.Y))
             {
                 crash = true;
             }
-            // check if snake eats apple
-            if (CheckIfSnakeEatsApple(field, lastCell.X - 1, lastCell.Y))
+
+            else
             {
-                // add additional head
-                appleIsEaten = true;
+                // check if snake eats apple
+                if (CheckIfSnakeEatsApple(field, lastCell.X - 1, lastCell.Y))
+                {
+                    // add additional head
+                    appleIsEaten = true;
+                }
+                snake.Add(new Cell(lastCell.X - 1, lastCell.Y));
+                PlaceSnakeOnField(snake, field, crash);
             }
-            snake.Add(new Cell(lastCell.X - 1, lastCell.Y));
-            PlaceSnakeOnField(snake, field, crash);
             break;
 
         case Directions.down:
