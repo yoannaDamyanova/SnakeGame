@@ -1,4 +1,7 @@
-﻿using Snake;
+﻿using Microsoft.EntityFrameworkCore;
+using Snake;
+using Snake.Data;
+using Snake.Data.Models;
 
 bool move = true;
 
@@ -18,7 +21,7 @@ Console.WriteLine("Press 'Enter' to start game: ");
 
 ConsoleKeyInfo start = Console.ReadKey();
 
-
+int score = 0;
 if (start.Key == ConsoleKey.Enter)
 {
     FillFieldWithValues(field.Field, apple);
@@ -61,6 +64,24 @@ if (start.Key == ConsoleKey.Enter)
     if (!move)
     {
         Console.WriteLine("Game over!");
+        Console.WriteLine("Enter your name: ");
+        string name = Console.ReadLine();
+        using (var db = new AppDbContext())
+        {
+            HighScores highscore = new HighScores();
+            highscore.Name = name;
+            highscore.Score = score;
+            db.Add(highscore);
+            db.SaveChanges();
+        }
+        using (var db = new AppDbContext())
+        {
+            var list = db.HighScores.ToList();
+            foreach (var highscore in list)
+            {
+                Console.WriteLine($"{highscore.Name}....{highscore.Score}");
+            }
+        }
     }
 }
 bool AreDirectionsOpposite(Directions direction1, Directions direction2)
@@ -290,6 +311,7 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
     }
     else if (appleIsEaten)
     {
+        score += 5;
         while (CheckIfRandomizedAppleMatchesSnake(field, apple.Apple.X, apple.Apple.Y))
         {
             apple.Apple.X = new Random().Next(dimension);
@@ -297,5 +319,6 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
         }
     }
     PrintFieldWithSnake(field);
+    Console.WriteLine($"Current score: {score}");
 }
 
