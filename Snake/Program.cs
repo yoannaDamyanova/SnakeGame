@@ -38,14 +38,16 @@ if (start.Key == ConsoleKey.Enter)
         Console.WriteLine();
     }
     Console.WriteLine("Choose direction");
-    ConsoleKeyInfo enteredDirection;
+    ConsoleKeyInfo enteredDirection=Console.ReadKey();
 
     do
     {
         FillFieldWithValues(field.Field, apple);
-
+        while (Console.KeyAvailable)
+        {
+            enteredDirection = Console.ReadKey();
+        }
         // get key pressed by user
-        enteredDirection = Console.ReadKey();
         Directions dir = SetDirection(enteredDirection);
         if (!AreDirectionsOpposite(dir, direction))
         {
@@ -55,17 +57,16 @@ if (start.Key == ConsoleKey.Enter)
         Thread.Sleep(1000);
         Console.Clear();
 
-        PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
-
-        //PrintFieldWithSnake(field.Field);
-
-
+        PerformDirectionLogic(direction, snake.SnakeBody, field.Field);        
     } while (move);
     if (!move)
     {
+        Console.Clear();
         Console.WriteLine("Game over!");
         Console.WriteLine("Enter your name: ");
         string name = Console.ReadLine();
+        Console.Clear();
+        Console.WriteLine("High Scores:");
         using (var db = new AppDbContext())
         {
             HighScores highscore = new HighScores();
@@ -73,15 +74,20 @@ if (start.Key == ConsoleKey.Enter)
             highscore.Score = score;
             db.Add(highscore);
             db.SaveChanges();
-        }
-        using (var db = new AppDbContext())
-        {
-            var list = db.HighScores.ToList();
-            foreach (var highscore in list)
+            var scores = db.HighScores
+                .GroupBy(x => x.Name)
+                .Select(grp => new
+                {
+                    Name = grp.Key,
+                    HighScore = grp.Max(y => y.Score)
+                })
+                .ToList();               
+            foreach (var personalScore in scores)
             {
-                Console.WriteLine($"{highscore.Name}....{highscore.Score}");
+                Console.WriteLine($"{personalScore.Name}...{personalScore.HighScore}");
             }
         }
+
     }
 }
 bool AreDirectionsOpposite(Directions direction1, Directions direction2)
@@ -165,13 +171,13 @@ Directions SetDirection(ConsoleKeyInfo enteredDirection)
 {
     switch (enteredDirection.Key)
     {
-        case ConsoleKey.W:
+        case ConsoleKey.UpArrow:
             return Directions.up;
-        case ConsoleKey.S:
+        case ConsoleKey.DownArrow:
             return Directions.down;
-        case ConsoleKey.D:
+        case ConsoleKey.RightArrow:
             return Directions.right;
-        case ConsoleKey.A:
+        case ConsoleKey.LeftArrow:
             return Directions.left;
         default: return Directions.down;
     }
