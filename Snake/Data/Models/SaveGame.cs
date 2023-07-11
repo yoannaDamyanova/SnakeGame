@@ -4,14 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Snake
+namespace Snake.Data.Models
 {
-    public enum Directions
+    public class SaveGame
     {
-        up = 1,
-        down = 2,
-        left = 3,
-        right = 4,
-        pause = 5,
+        public int Id { get; set; }
+        public string GameState { get; set; }
     }
 }

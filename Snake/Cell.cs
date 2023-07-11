@@ -16,7 +16,7 @@ namespace Snake
         { 
             X = x;
             Y = y;
-            Character = 'a';
+            Character = '░';
         }
     }
 }

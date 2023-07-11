@@ -2,6 +2,8 @@
 using Snake;
 using Snake.Data;
 using Snake.Data.Models;
+using Snake.Migrations;
+using System.Text.Json;
 
 bool move = true;
 
@@ -14,6 +16,7 @@ SnakeObject snake = new SnakeObject();
 FieldCLass field = new FieldCLass(dimension);
 
 Fruit apple = new Fruit();
+
 
 apple.Apple.Character = 'a';
 
@@ -33,12 +36,31 @@ if (start.Key == ConsoleKey.Enter)
     {
         for (int j = 0; j <= field.Field.GetLength(1) - 1; j++)
         {
+            if (field.Field[i, j] == '░')
+            {
+                //green
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.Gray;
+
+            }
+            if (field.Field[i, j] == 's')
+            {
+                Console.BackgroundColor = ConsoleColor.Green;
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+            }
+            if (field.Field[i, j] == 'a')
+            {
+                //red
+
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+            }
             Console.Write(field.Field[i, j]);
         }
         Console.WriteLine();
     }
     Console.WriteLine("Choose direction");
-    ConsoleKeyInfo enteredDirection=Console.ReadKey();
+    ConsoleKeyInfo enteredDirection = Console.ReadKey();
 
     do
     {
@@ -48,7 +70,37 @@ if (start.Key == ConsoleKey.Enter)
             enteredDirection = Console.ReadKey();
         }
         // get key pressed by user
+        if (enteredDirection.Key == ConsoleKey.P)
+        {
+            while (!Console.KeyAvailable)
+            {
+                Thread.Sleep(1000);
+            }
+            GameStateJson gameState = new GameStateJson
+            {
+                Snake = snake.SnakeBody,
+                Apple=apple,
+                Direction=direction,
+                Score=score
+            };
+            string jsonString = JsonSerializer.Serialize(gameState);
+            using (var db = new AppDbContext())
+            {
+                SaveGame savedGame = new SaveGame
+                {
+                    GameState = jsonString
+                };
+                db.Add(savedGame);
+                db.SaveChanges();
+            }
+                enteredDirection = Console.ReadKey();
+            if (enteredDirection.Key == ConsoleKey.P)
+            {
+                continue;
+            }
+        }
         Directions dir = SetDirection(enteredDirection);
+
         if (!AreDirectionsOpposite(dir, direction))
         {
             direction = dir;
@@ -57,7 +109,7 @@ if (start.Key == ConsoleKey.Enter)
         Thread.Sleep(1000);
         Console.Clear();
 
-        PerformDirectionLogic(direction, snake.SnakeBody, field.Field);        
+        PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
     } while (move);
     if (!move)
     {
@@ -81,7 +133,7 @@ if (start.Key == ConsoleKey.Enter)
                     Name = grp.Key,
                     HighScore = grp.Max(y => y.Score)
                 })
-                .ToList();               
+                .ToList();
             foreach (var personalScore in scores)
             {
                 Console.WriteLine($"{personalScore.Name}...{personalScore.HighScore}");
@@ -113,7 +165,7 @@ void FillFieldWithValues(char[,] array, Fruit apple)
     {
         for (int j = 0; j < array.GetLength(1); j++)
         {
-            array[i, j] = '0';
+            array[i, j] = '░';
         }
     }
     array[appleX, appleY] = 'a';
@@ -162,6 +214,25 @@ void PrintFieldWithSnake(char[,] field)
     {
         for (int j = 0; j <= parameters - 1; j++)
         {
+            if (field[i, j] == '░')
+            {
+                //green
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.Gray;
+
+            }
+            if (field[i, j] == 's')
+            {
+                Console.BackgroundColor = ConsoleColor.Green;
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+            }
+            if (field[i, j] == 'a')
+            {
+                //red
+
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+            }
             Console.Write(field[i, j]);
         }
         Console.WriteLine();
@@ -312,7 +383,7 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
     if (!appleIsEaten)
     {
         // remove tail from field
-        field[firstCell.X, firstCell.Y] = '0';
+        field[firstCell.X, firstCell.Y] = '░';
         snake.RemoveAt(0);
     }
     else if (appleIsEaten)

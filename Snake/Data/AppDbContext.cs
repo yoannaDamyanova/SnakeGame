@@ -16,8 +16,7 @@ namespace Snake.Data
         {
             optionsBuilder.UseSqlServer(connectionString);
         }
-
         public DbSet<HighScores> HighScores { get; set; }
-
+        public DbSet<SaveGame> SavedGames { get; set; }
     }
 }
