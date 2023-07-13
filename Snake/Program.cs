@@ -327,72 +327,39 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
     // check for apple
     bool appleIsEaten = false;
     // depending on direction, move head
+    int x = 0;
+    int y = 0;
     switch (direction)
     {
         case Directions.up:
-
-            if (CheckIfSnakeRunsIntoItself(field, lastCell.X - 1, lastCell.Y))
-            {
-                move = false;
-            }
-            else
-            {
-                // check if snake eats apple
-                if (CheckIfSnakeEatsApple(field, lastCell.X - 1, lastCell.Y))
-                {
-                    // add additional head
-                    appleIsEaten = true;
-                }
-                snake.Add(new Cell(lastCell.X - 1, lastCell.Y));
-                PlaceSnakeOnField(snake, field, crash);
-            }
+            x = lastCell.X - 1;
+            y = lastCell.Y;
             break;
-
         case Directions.down:
-            if (CheckIfSnakeRunsIntoItself(field, lastCell.X + 1, lastCell.Y))
-            {
-                move = false;
-            }
-            if (CheckIfSnakeEatsApple(field, lastCell.X + 1, lastCell.Y))
-            {
-                // add additional head
-                appleIsEaten = true;
-            }
-            snake.Add(new Cell(lastCell.X + 1, lastCell.Y));
-            PlaceSnakeOnField(snake, field, crash);
+            x = lastCell.X + 1;
+            y = lastCell.Y;
             break;
-
         case Directions.left:
-            if (CheckIfSnakeRunsIntoItself(field, lastCell.X, lastCell.Y - 1))
-            {
-                move = false;
-            }
-            // check if snake eats apple
-            if (CheckIfSnakeEatsApple(field, lastCell.X, lastCell.Y - 1))
-            {
-                // add additional head
-                appleIsEaten = true;
-            }
-            snake.Add(new Cell(lastCell.X, lastCell.Y - 1));
-            PlaceSnakeOnField(snake, field, crash);
+            x = lastCell.X;
+            y = lastCell.Y - 1;
             break;
-
         case Directions.right:
-            if (CheckIfSnakeRunsIntoItself(field, lastCell.X, lastCell.Y + 1))
-            {
-                move = false;
-            }
-            // check if snake eats apple
-            if (CheckIfSnakeEatsApple(field, lastCell.X, lastCell.Y + 1))
-            {
-                // add additional head
-                appleIsEaten = true;
-            }
-            snake.Add(new Cell(lastCell.X, lastCell.Y + 1));
-            PlaceSnakeOnField(snake, field, crash);
+            x = lastCell.X;
+            y = lastCell.Y + 1;
             break;
-
     }
+    if (CheckIfSnakeRunsIntoItself(field, x, y))
+    {
+        move = false;
+    }
+    // check if snake eats apple
+    if (CheckIfSnakeEatsApple(field, x, y))
+    {
+        // add additional head
+        appleIsEaten = true;
+    }
+    snake.Add(new Cell(x, y));
+    PlaceSnakeOnField(snake, field, crash);
     if (!appleIsEaten)
     {
         // remove tail from field
