@@ -1,9 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Azure.Amqp.Framing;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Snake;
 using Snake.Data;
 using Snake.Data.Models;
 using Snake.Migrations;
+using System.Data;
 using System.Text.Json;
+using System.Threading.Channels;
 
 bool move = true;
 
@@ -17,14 +21,19 @@ FieldCLass field = new FieldCLass(dimension);
 
 Fruit apple = new Fruit();
 
-
+List<SaveGame> savedGamesList = new List<SaveGame>();
 apple.Apple.Character = 'a';
 
-Console.WriteLine("Press 'Enter' to start game: ");
+Console.WriteLine("Press 'Enter' to start new game: ");
+Console.WriteLine("Press 'L' to load game");
 
 ConsoleKeyInfo start = Console.ReadKey();
 
+bool isPaused = false;
+bool isEnded = false;
 int score = 0;
+string name = string.Empty;
+ConsoleKeyInfo enteredDirection;
 if (start.Key == ConsoleKey.Enter)
 {
     FillFieldWithValues(field.Field, apple);
@@ -38,10 +47,8 @@ if (start.Key == ConsoleKey.Enter)
         {
             if (field.Field[i, j] == '░')
             {
-                //green
                 Console.BackgroundColor = ConsoleColor.Black;
                 Console.ForegroundColor = ConsoleColor.Gray;
-
             }
             if (field.Field[i, j] == 's')
             {
@@ -50,8 +57,6 @@ if (start.Key == ConsoleKey.Enter)
             }
             if (field.Field[i, j] == 'a')
             {
-                //red
-
                 Console.BackgroundColor = ConsoleColor.Red;
                 Console.ForegroundColor = ConsoleColor.DarkRed;
             }
@@ -60,17 +65,18 @@ if (start.Key == ConsoleKey.Enter)
         Console.WriteLine();
     }
     Console.WriteLine("Choose direction");
-    ConsoleKeyInfo enteredDirection = Console.ReadKey();
-
+    enteredDirection = Console.ReadKey();
     do
     {
         FillFieldWithValues(field.Field, apple);
         while (Console.KeyAvailable)
         {
             enteredDirection = Console.ReadKey();
+            isPaused = enteredDirection.Key == ConsoleKey.P;
+            isEnded = enteredDirection.Key == ConsoleKey.B;
         }
         // get key pressed by user
-        if (enteredDirection.Key == ConsoleKey.P)
+        if (isPaused)
         {
             while (!Console.KeyAvailable)
             {
@@ -79,9 +85,9 @@ if (start.Key == ConsoleKey.Enter)
             GameStateJson gameState = new GameStateJson
             {
                 Snake = snake.SnakeBody,
-                Apple=apple,
-                Direction=direction,
-                Score=score
+                Apple = apple,
+                Direction = direction,
+                Score = score
             };
             string jsonString = JsonSerializer.Serialize(gameState);
             using (var db = new AppDbContext())
@@ -93,13 +99,38 @@ if (start.Key == ConsoleKey.Enter)
                 db.Add(savedGame);
                 db.SaveChanges();
             }
-                enteredDirection = Console.ReadKey();
+            enteredDirection = Console.ReadKey();
             if (enteredDirection.Key == ConsoleKey.P)
             {
+                isPaused = false;
                 continue;
             }
         }
-        Directions dir = SetDirection(enteredDirection);
+        else if (isEnded)
+        {
+            GameStateJson gameState = new GameStateJson
+            {
+                Snake = snake.SnakeBody,
+                Apple = apple,
+                Direction = direction,
+                Score = score
+            };
+
+            string jsonString = JsonSerializer.Serialize(gameState);
+            using (var db = new AppDbContext())
+            {
+                SaveGame savedGame = new SaveGame
+                {
+                    GameState = jsonString
+                };
+                db.Add(savedGame);
+                db.SaveChanges();
+            }
+            move = false;
+            break;
+        }
+        enteredDirection = Console.ReadKey();
+        Directions dir = SetDirection(enteredDirection) ?? Directions.down;
 
         if (!AreDirectionsOpposite(dir, direction))
         {
@@ -108,7 +139,6 @@ if (start.Key == ConsoleKey.Enter)
         // pause for 1 second
         Thread.Sleep(1000);
         Console.Clear();
-
         PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
     } while (move);
     if (!move)
@@ -116,7 +146,7 @@ if (start.Key == ConsoleKey.Enter)
         Console.Clear();
         Console.WriteLine("Game over!");
         Console.WriteLine("Enter your name: ");
-        string name = Console.ReadLine();
+        name = Console.ReadLine();
         Console.Clear();
         Console.WriteLine("High Scores:");
         using (var db = new AppDbContext())
@@ -142,6 +172,141 @@ if (start.Key == ConsoleKey.Enter)
 
     }
 }
+if (start.Key == ConsoleKey.L)
+{
+    isPaused = false;
+    Console.Write("Enter your Id: ");
+    int id = int.Parse(Console.ReadLine());
+    string jsonSavedGame = string.Empty;
+    using (var db = new AppDbContext())
+    {
+        savedGamesList = db.SavedGames.ToList();
+    }
+    jsonSavedGame = savedGamesList.FirstOrDefault(x => x.Id == id).GameState;
+    var currentSavedGame = JsonSerializer.Deserialize<GameStateJson>(jsonSavedGame);
+    apple = currentSavedGame.Apple;
+    snake.SnakeBody = currentSavedGame.Snake;
+    score = currentSavedGame.Score;
+    direction = currentSavedGame.Direction;
+    FillFieldWithValues(field.Field, apple);
+    bool crash = false;
+    PlaceSnakeOnField(snake.SnakeBody, field.Field, crash);
+    PrintFieldWithSnake(field.Field);
+    Console.WriteLine("Press 'S' to start game");
+    enteredDirection = Console.ReadKey();
+    if (enteredDirection.Key == ConsoleKey.S)
+    {
+        do
+        {
+            FillFieldWithValues(field.Field, apple);
+            direction = SetDirection(enteredDirection) ?? direction;
+            while (Console.KeyAvailable)
+            {
+                enteredDirection = Console.ReadKey();
+                isPaused = enteredDirection.Key == ConsoleKey.P;
+                isEnded = enteredDirection.Key == ConsoleKey.B;
+            }
+            // get key pressed by user
+            if (isPaused)
+            {
+                while (!Console.KeyAvailable)
+                {
+                    Thread.Sleep(1000);
+                }
+                GameStateJson gameState = new GameStateJson
+                {
+                    Snake = snake.SnakeBody,
+                    Apple = apple,
+                    Direction = direction,
+                    Score = score
+                };
+                string jsonString = JsonSerializer.Serialize(gameState);
+                using (var db = new AppDbContext())
+                {
+                    SaveGame savedGame = new SaveGame
+                    {
+                        GameState = jsonString
+                    };
+                    db.Add(savedGame);
+                    db.SaveChanges();
+                }
+                enteredDirection = Console.ReadKey();
+                if (enteredDirection.Key == ConsoleKey.P)
+                {
+                    isPaused = false;
+                    continue;
+                }
+            }
+            else if (isEnded)
+            {
+
+                GameStateJson gameState = new GameStateJson
+                {
+                    Snake = snake.SnakeBody,
+                    Apple = apple,
+                    Direction = direction,
+                    Score = score
+                };
+                string jsonString = JsonSerializer.Serialize(gameState);
+                using (var db = new AppDbContext())
+                {
+                    SaveGame savedGame = new SaveGame
+                    {
+                        GameState = jsonString
+                    };
+                    db.Add(savedGame);
+                    db.SaveChanges();
+                }
+                move = false;
+                break;
+            }
+
+            Directions dir = SetDirection(enteredDirection) ?? direction;
+
+            if (!AreDirectionsOpposite(dir, direction))
+            {
+                direction = dir;
+            }
+            // pause for 1 second
+            Thread.Sleep(1000);
+            Console.Clear();
+            PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
+        } while (move);
+    }
+
+}
+if (!move)
+{
+    Console.Clear();
+    Console.WriteLine("Game over!");
+    Console.WriteLine("Enter your name: ");
+    name = Console.ReadLine();
+    Console.Clear();
+    Console.WriteLine("High Scores:");
+    using (var db = new AppDbContext())
+    {
+        HighScores highscore = new HighScores();
+        highscore.Name = name;
+        highscore.Score = score;
+        db.Add(highscore);
+        db.SaveChanges();
+        var scores = db.HighScores
+            .GroupBy(x => x.Name)
+            .Select(grp => new
+            {
+                Name = grp.Key,
+                HighScore = grp.Max(y => y.Score)
+            })
+            .ToList();
+        foreach (var personalScore in scores)
+        {
+            Console.WriteLine($"{personalScore.Name}...{personalScore.HighScore}");
+        }
+    }
+
+}
+
+
 bool AreDirectionsOpposite(Directions direction1, Directions direction2)
 {
     if (direction1 == Directions.up && direction2 == Directions.down)
@@ -238,7 +403,7 @@ void PrintFieldWithSnake(char[,] field)
         Console.WriteLine();
     }
 }
-Directions SetDirection(ConsoleKeyInfo enteredDirection)
+Directions? SetDirection(ConsoleKeyInfo enteredDirection)
 {
     switch (enteredDirection.Key)
     {
@@ -250,9 +415,10 @@ Directions SetDirection(ConsoleKeyInfo enteredDirection)
             return Directions.right;
         case ConsoleKey.LeftArrow:
             return Directions.left;
-        default: return Directions.down;
+        default: return null;
     }
 }
+
 bool CheckIfSnakeEatsApple(char[,] field, int x, int y)
 {
     if (x >= 0
@@ -321,7 +487,6 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
             {
                 crash = true;
             }
-
             else
             {
                 // check if snake eats apple

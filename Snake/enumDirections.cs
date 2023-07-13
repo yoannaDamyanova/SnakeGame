@@ -11,7 +11,6 @@ namespace Snake
         up = 1,
         down = 2,
         left = 3,
-        right = 4,
-        pause = 5,
+        right = 4,        
     }
 }
