@@ -29,7 +29,7 @@ bool crash;
 int score;
 string name;
 
-ConsoleKeyInfo enteredDirection;
+ConsoleKeyInfo? enteredDirection;
 
 while (true)
 {
@@ -59,8 +59,8 @@ do
     while (Console.KeyAvailable)
     {
         enteredDirection = Console.ReadKey();
-        isPaused = enteredDirection.Key == ConsoleKey.P;
-        isEnded = enteredDirection.Key == ConsoleKey.B;
+        isPaused = enteredDirection.Value.Key == ConsoleKey.P;
+        isEnded = enteredDirection.Value.Key == ConsoleKey.B;
     }
     // get key pressed by user
     if (isPaused)
@@ -88,7 +88,7 @@ do
             db.SaveChanges();
         }
         enteredDirection = Console.ReadKey();
-        if (enteredDirection.Key == ConsoleKey.P)
+        if (enteredDirection.Value.Key == ConsoleKey.P)
         {
             isPaused = false;
             continue;
@@ -252,9 +252,13 @@ void PrintFieldWithSnake(char[,] field)
         Console.WriteLine();
     }
 }
-Directions? SetDirection(ConsoleKeyInfo enteredDirection)
+Directions? SetDirection(ConsoleKeyInfo? enteredDirection)
 {
-    switch (enteredDirection.Key)
+    if (!enteredDirection.HasValue)
+    {
+        return null;
+    }
+    switch (enteredDirection.Value.Key)
     {
         case ConsoleKey.UpArrow:
             return Directions.up;
@@ -314,10 +318,7 @@ bool CheckIfSnakeRunsIntoItself(char[,] field, int x, int y)
 void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field)
 {
     // check for crash
-
-
     PlaceSnakeOnField(snake, field, crash);
-
     // get head
     Cell lastCell = snake.Last();
 
