@@ -5,276 +5,131 @@ using Snake;
 using Snake.Data;
 using Snake.Data.Models;
 using Snake.Migrations;
+using System;
 using System.Data;
 using System.Text.Json;
 using System.Threading.Channels;
+using static System.Formats.Asn1.AsnWriter;
+using System.Xml.Linq;
 
-bool move = true;
-
-int dimension = 10;
-
-Directions direction = Directions.up;
-
-SnakeObject snake = new SnakeObject();
-
-FieldCLass field = new FieldCLass(dimension);
-
-Fruit apple = new Fruit();
-
-List<SaveGame> savedGamesList = new List<SaveGame>();
-apple.Apple.Character = 'a';
 
 Console.WriteLine("Press 'Enter' to start new game: ");
 Console.WriteLine("Press 'L' to load game");
 
-ConsoleKeyInfo start = Console.ReadKey();
+bool move;
+int dimension;
+Directions direction;
+SnakeObject snake;
+FieldCLass field;
+Fruit apple;
+List<SaveGame> savedGamesList;
+bool isPaused;
+bool isEnded;
+bool crash;
+int score;
+string name;
 
-bool isPaused = false;
-bool isEnded = false;
-int score = 0;
-string name = string.Empty;
 ConsoleKeyInfo enteredDirection;
-if (start.Key == ConsoleKey.Enter)
+
+while (true)
+{
+    ConsoleKeyInfo start = Console.ReadKey();
+    if (start.Key == ConsoleKey.Enter)
+    {
+        StartNewGame();
+        break;
+    }
+    else if (start.Key == ConsoleKey.L)
+    {
+        LoadGame();
+        break;
+    }
+    else
+    {
+        Console.WriteLine("Invalid! Try again");
+    }
+}
+FillFieldWithValues(field.Field, apple);
+PlaceSnakeOnField(snake.SnakeBody, field.Field, !move);
+PrintFieldWithSnake(field.Field);
+do
 {
     FillFieldWithValues(field.Field, apple);
-    foreach (var item in snake.SnakeBody)
+    direction = SetDirection(enteredDirection) ?? direction;
+    while (Console.KeyAvailable)
     {
-        field.Field[item.X, item.Y] = 's';
-    }
-    for (int i = 0; i <= field.Field.GetLength(0) - 1; i++)
-    {
-        for (int j = 0; j <= field.Field.GetLength(1) - 1; j++)
-        {
-            if (field.Field[i, j] == '░')
-            {
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.Gray;
-            }
-            if (field.Field[i, j] == 's')
-            {
-                Console.BackgroundColor = ConsoleColor.Green;
-                Console.ForegroundColor = ConsoleColor.DarkGreen;
-            }
-            if (field.Field[i, j] == 'a')
-            {
-                Console.BackgroundColor = ConsoleColor.Red;
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-            }
-            Console.Write(field.Field[i, j]);
-        }
-        Console.WriteLine();
-    }
-    Console.WriteLine("Choose direction");
-    enteredDirection = Console.ReadKey();
-    do
-    {
-        FillFieldWithValues(field.Field, apple);
-        while (Console.KeyAvailable)
-        {
-            enteredDirection = Console.ReadKey();
-            isPaused = enteredDirection.Key == ConsoleKey.P;
-            isEnded = enteredDirection.Key == ConsoleKey.B;
-        }
-        // get key pressed by user
-        if (isPaused)
-        {
-            while (!Console.KeyAvailable)
-            {
-                Thread.Sleep(1000);
-            }
-            GameStateJson gameState = new GameStateJson
-            {
-                Snake = snake.SnakeBody,
-                Apple = apple,
-                Direction = direction,
-                Score = score
-            };
-            string jsonString = JsonSerializer.Serialize(gameState);
-            using (var db = new AppDbContext())
-            {
-                SaveGame savedGame = new SaveGame
-                {
-                    GameState = jsonString
-                };
-                db.Add(savedGame);
-                db.SaveChanges();
-            }
-            enteredDirection = Console.ReadKey();
-            if (enteredDirection.Key == ConsoleKey.P)
-            {
-                isPaused = false;
-                continue;
-            }
-        }
-        else if (isEnded)
-        {
-            GameStateJson gameState = new GameStateJson
-            {
-                Snake = snake.SnakeBody,
-                Apple = apple,
-                Direction = direction,
-                Score = score
-            };
-
-            string jsonString = JsonSerializer.Serialize(gameState);
-            using (var db = new AppDbContext())
-            {
-                SaveGame savedGame = new SaveGame
-                {
-                    GameState = jsonString
-                };
-                db.Add(savedGame);
-                db.SaveChanges();
-            }
-            move = false;
-            break;
-        }
         enteredDirection = Console.ReadKey();
-        Directions dir = SetDirection(enteredDirection) ?? Directions.down;
-
-        if (!AreDirectionsOpposite(dir, direction))
-        {
-            direction = dir;
-        }
-        // pause for 1 second
-        Thread.Sleep(1000);
-        Console.Clear();
-        PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
-    } while (move);
-    if (!move)
+        isPaused = enteredDirection.Key == ConsoleKey.P;
+        isEnded = enteredDirection.Key == ConsoleKey.B;
+    }
+    // get key pressed by user
+    if (isPaused)
     {
-        Console.Clear();
-        Console.WriteLine("Game over!");
-        Console.WriteLine("Enter your name: ");
-        name = Console.ReadLine();
-        Console.Clear();
-        Console.WriteLine("High Scores:");
+        while (!Console.KeyAvailable)
+        {
+            Thread.Sleep(1000);
+        }
+        GameStateJson gameState = new GameStateJson
+        {
+            Snake = snake.SnakeBody,
+            Apple = apple,
+            Direction = direction,
+            Score = score,
+            FieldDimension = dimension
+        };
+        string jsonString = JsonSerializer.Serialize(gameState);
         using (var db = new AppDbContext())
         {
-            HighScores highscore = new HighScores();
-            highscore.Name = name;
-            highscore.Score = score;
-            db.Add(highscore);
+            SaveGame savedGame = new SaveGame
+            {
+                GameState = jsonString
+            };
+            db.Add(savedGame);
             db.SaveChanges();
-            var scores = db.HighScores
-                .GroupBy(x => x.Name)
-                .Select(grp => new
-                {
-                    Name = grp.Key,
-                    HighScore = grp.Max(y => y.Score)
-                })
-                .ToList();
-            foreach (var personalScore in scores)
-            {
-                Console.WriteLine($"{personalScore.Name}...{personalScore.HighScore}");
-            }
         }
-
-    }
-}
-if (start.Key == ConsoleKey.L)
-{
-    isPaused = false;
-    Console.Write("Enter your Id: ");
-    int id = int.Parse(Console.ReadLine());
-    string jsonSavedGame = string.Empty;
-    using (var db = new AppDbContext())
-    {
-        savedGamesList = db.SavedGames.ToList();
-    }
-    jsonSavedGame = savedGamesList.FirstOrDefault(x => x.Id == id).GameState;
-    var currentSavedGame = JsonSerializer.Deserialize<GameStateJson>(jsonSavedGame);
-    apple = currentSavedGame.Apple;
-    snake.SnakeBody = currentSavedGame.Snake;
-    score = currentSavedGame.Score;
-    direction = currentSavedGame.Direction;
-    FillFieldWithValues(field.Field, apple);
-    bool crash = false;
-    PlaceSnakeOnField(snake.SnakeBody, field.Field, crash);
-    PrintFieldWithSnake(field.Field);
-    Console.WriteLine("Press 'S' to start game");
-    enteredDirection = Console.ReadKey();
-    if (enteredDirection.Key == ConsoleKey.S)
-    {
-        do
+        enteredDirection = Console.ReadKey();
+        if (enteredDirection.Key == ConsoleKey.P)
         {
-            FillFieldWithValues(field.Field, apple);
-            direction = SetDirection(enteredDirection) ?? direction;
-            while (Console.KeyAvailable)
-            {
-                enteredDirection = Console.ReadKey();
-                isPaused = enteredDirection.Key == ConsoleKey.P;
-                isEnded = enteredDirection.Key == ConsoleKey.B;
-            }
-            // get key pressed by user
-            if (isPaused)
-            {
-                while (!Console.KeyAvailable)
-                {
-                    Thread.Sleep(1000);
-                }
-                GameStateJson gameState = new GameStateJson
-                {
-                    Snake = snake.SnakeBody,
-                    Apple = apple,
-                    Direction = direction,
-                    Score = score
-                };
-                string jsonString = JsonSerializer.Serialize(gameState);
-                using (var db = new AppDbContext())
-                {
-                    SaveGame savedGame = new SaveGame
-                    {
-                        GameState = jsonString
-                    };
-                    db.Add(savedGame);
-                    db.SaveChanges();
-                }
-                enteredDirection = Console.ReadKey();
-                if (enteredDirection.Key == ConsoleKey.P)
-                {
-                    isPaused = false;
-                    continue;
-                }
-            }
-            else if (isEnded)
-            {
+            isPaused = false;
+            continue;
+        }
+    }
+    else if (isEnded)
+    {
+        GameStateJson gameState = new GameStateJson
+        {
+            Snake = snake.SnakeBody,
+            Apple = apple,
+            Direction = direction,
+            Score = score,
+            FieldDimension = dimension
+        };
 
-                GameStateJson gameState = new GameStateJson
-                {
-                    Snake = snake.SnakeBody,
-                    Apple = apple,
-                    Direction = direction,
-                    Score = score
-                };
-                string jsonString = JsonSerializer.Serialize(gameState);
-                using (var db = new AppDbContext())
-                {
-                    SaveGame savedGame = new SaveGame
-                    {
-                        GameState = jsonString
-                    };
-                    db.Add(savedGame);
-                    db.SaveChanges();
-                }
-                move = false;
-                break;
-            }
-
-            Directions dir = SetDirection(enteredDirection) ?? direction;
-
-            if (!AreDirectionsOpposite(dir, direction))
+        string jsonString = JsonSerializer.Serialize(gameState);
+        using (var db = new AppDbContext())
+        {
+            SaveGame savedGame = new SaveGame
             {
-                direction = dir;
-            }
-            // pause for 1 second
-            Thread.Sleep(1000);
-            Console.Clear();
-            PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
-        } while (move);
+                GameState = jsonString
+            };
+            db.Add(savedGame);
+            db.SaveChanges();
+        }
+        move = false;
+        break;
     }
 
-}
+    Directions dir = SetDirection(enteredDirection) ?? direction;
+
+    if (!AreDirectionsOpposite(dir, direction))
+    {
+        direction = dir;
+    }
+    // pause for 1 second
+    Thread.Sleep(1000);
+    Console.Clear();
+    PerformDirectionLogic(direction, snake.SnakeBody, field.Field);
+} while (move);
 if (!move)
 {
     Console.Clear();
@@ -305,8 +160,6 @@ if (!move)
     }
 
 }
-
-
 bool AreDirectionsOpposite(Directions direction1, Directions direction2)
 {
     if (direction1 == Directions.up && direction2 == Directions.down)
@@ -338,10 +191,6 @@ void FillFieldWithValues(char[,] array, Fruit apple)
 }
 void PlaceSnakeOnField(List<Cell> snake, char[,] field, bool crash)
 {
-    if (crash)
-    {
-        move = false;
-    }
     foreach (var item in snake)
     {
         int currX = item.X;
@@ -466,7 +315,6 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
 {
     // check for crash
 
-    bool crash = false;
 
     PlaceSnakeOnField(snake, field, crash);
 
@@ -485,7 +333,7 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
 
             if (CheckIfSnakeRunsIntoItself(field, lastCell.X - 1, lastCell.Y))
             {
-                crash = true;
+                move = false;
             }
             else
             {
@@ -503,7 +351,7 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
         case Directions.down:
             if (CheckIfSnakeRunsIntoItself(field, lastCell.X + 1, lastCell.Y))
             {
-                crash = true;
+                move = false;
             }
             if (CheckIfSnakeEatsApple(field, lastCell.X + 1, lastCell.Y))
             {
@@ -517,7 +365,7 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
         case Directions.left:
             if (CheckIfSnakeRunsIntoItself(field, lastCell.X, lastCell.Y - 1))
             {
-                crash = true;
+                move = false;
             }
             // check if snake eats apple
             if (CheckIfSnakeEatsApple(field, lastCell.X, lastCell.Y - 1))
@@ -532,7 +380,7 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
         case Directions.right:
             if (CheckIfSnakeRunsIntoItself(field, lastCell.X, lastCell.Y + 1))
             {
-                crash = true;
+                move = false;
             }
             // check if snake eats apple
             if (CheckIfSnakeEatsApple(field, lastCell.X, lastCell.Y + 1))
@@ -564,3 +412,54 @@ void PerformDirectionLogic(Directions direction, List<Cell> snake, char[,] field
     Console.WriteLine($"Current score: {score}");
 }
 
+void StartNewGame()
+{
+    move = true;
+    dimension = 15;
+    direction = Directions.up;
+    snake = new SnakeObject();
+    field = new FieldCLass(dimension);
+    apple = new Fruit();
+    savedGamesList = new List<SaveGame>();
+    apple.Apple.Character = 'a';
+    isPaused = false;
+    isEnded = false;
+    crash = false;
+    score = 0;
+    name = string.Empty;
+
+    Console.WriteLine("Choose direction");
+    enteredDirection = Console.ReadKey();
+}
+void LoadGame()
+{
+    using (var db = new AppDbContext())
+    {
+        savedGamesList = db.SavedGames.ToList();
+    }
+    Console.Clear();
+    foreach (var savedGame in savedGamesList)
+    {
+        Console.WriteLine($"{savedGame.Id}");
+    }
+    Console.Write("Choose game: ");
+    int id = int.Parse(Console.ReadLine());
+    string jsonSavedGame = string.Empty;
+    jsonSavedGame = savedGamesList.FirstOrDefault(x => x.Id == id).GameState;
+    var currentSavedGame = JsonSerializer.Deserialize<GameStateJson>(jsonSavedGame);
+
+    move = true;
+    dimension = currentSavedGame.FieldDimension;
+    direction = currentSavedGame.Direction;
+    snake = new SnakeObject();
+    snake.SnakeBody = currentSavedGame.Snake;
+    field = new FieldCLass(dimension);
+    apple = currentSavedGame.Apple;
+    isPaused = false;
+    isEnded = false;
+    crash = false;
+    score = currentSavedGame.Score;
+    name = string.Empty;
+    Console.WriteLine("Press 'S' to start game");
+    enteredDirection = Console.ReadKey();
+}

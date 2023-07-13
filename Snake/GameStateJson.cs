@@ -12,5 +12,6 @@ namespace Snake
         public Fruit Apple { get; set; }
         public Directions Direction { get; set; }
         public int Score { get; set; }
+        public int FieldDimension { get; set; }
     }
 }
